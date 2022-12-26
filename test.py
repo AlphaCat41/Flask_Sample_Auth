@@ -18,6 +18,19 @@ mysql.init_app(app)
 conn = mysql.connect()
 cursor =conn.cursor()
 
+def search(username, password):
+    sql = "SELECT * FROM User WHERE %s"
+    condition = ("username = '%s' AND password = '%s'" % (username, password))
+    cursor.execute(sql % condition)
+    data = cursor.fetchone() or []
+    return data
+
+def insert(username, password):
+    sql = "INSERT INTO User (username, password) VALUES (%s, %s)"
+    value = (username, password) 
+    cursor.execute(sql, value)
+    conn.commit()
+
 @app.route('/')
 def test():
     cursor.execute("SELECT * from User")
@@ -29,13 +42,11 @@ def test():
 @app.route('/signup', methods = ['POST'])
 def signup():
     data = request.get_json()
-    sql = "INSERT INTO User (username, password) VALUES (%s, %s)"
-    value = (data['username'], data['password']) 
-    cursor.execute(sql, value)
-    conn.commit()
+    if(len(search(data['username'], data['password'])) != 0): 
+        return 'This user has been signup'
+    
     try:
-        cursor.execute(sql, value)
-        conn.commit()
+        insert(data['username'], data['password'])
     except:
         print("Error: unable to insert the data")
 
@@ -44,18 +55,15 @@ def signup():
 @app.route('/login', methods = ['POST'])
 def login():
     data = request.get_json()
-    sql = "SELECT * FROM User WHERE %s"
-    condition = ("username = '%s' AND password = '%s'" % (data['username'], data['password']))
 
-    print(sql % condition)
     try:
-        cursor.execute(sql % condition)
-        data = cursor.fetchone() or []
+        data = search(data['username'], data['password'])
     except:
         print("Error: unable to fetch data")
 
-    if(len(data) != 0): return "access token" 
-    else: return "Cannot find this user"
+    if(len(data) != 0): 
+        return "access token" 
+    return "Cannot find this user"
     # return jsonify({"desired" :list(data)})
 
 
