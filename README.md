@@ -5,6 +5,12 @@ Requirements:
 
 Install packages
 ```
+source venv/bin/activate
 pip install -r requirements.txt
+
+```
+Run
+```
+python test.py
 
 ```
