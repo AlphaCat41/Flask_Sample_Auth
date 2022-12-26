@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flaskext.mysql import MySQL
 import os
 from dotenv import load_dotenv
+from  werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 
@@ -18,9 +19,9 @@ mysql.init_app(app)
 conn = mysql.connect()
 cursor =conn.cursor()
 
-def search(username, password):
+def search(username):
     sql = "SELECT * FROM User WHERE %s"
-    condition = ("username = '%s' AND password = '%s'" % (username, password))
+    condition = ("username = '%s' LIMIT 1" % (username))
     cursor.execute(sql % condition)
     data = cursor.fetchone() or []
     return data
@@ -42,28 +43,28 @@ def test():
 @app.route('/signup', methods = ['POST'])
 def signup():
     data = request.get_json()
-    if(len(search(data['username'], data['password'])) != 0): 
-        return 'This user has been signup'
-    
-    try:
-        insert(data['username'], data['password'])
-    except:
-        print("Error: unable to insert the data")
-
-    return 'Successfully registered.'
+    user = search(data['username'])
+    # Not have user yet
+    if(len(user) == 0):
+        password = generate_password_hash(data['password'])
+        insert(data['username'], password)
+        return 'Successfully registered.'
+    username = user[0]
+    if(data['username'] == username): 
+        return 'The user has already registered.' 
+    return 'Cannot register'
 
 @app.route('/login', methods = ['POST'])
 def login():
     data = request.get_json()
-
-    try:
-        data = search(data['username'], data['password'])
-    except:
-        print("Error: unable to fetch data")
-
-    if(len(data) != 0): 
+    user = search(data['username'])
+    if(len(user) == 0):
+        return "Cannot find this user"
+    username = user[0]
+    password = user[1]
+    if(data['username'] == username and check_password_hash(password, data['password'])): 
         return "access token" 
-    return "Cannot find this user"
+    return 'Cannot login'
     # return jsonify({"desired" :list(data)})
 
 
