@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 from flaskext.mysql import MySQL
-import os
 from dotenv import load_dotenv
 from  werkzeug.security import generate_password_hash, check_password_hash
+import os
 
 load_dotenv()
 
@@ -66,7 +66,6 @@ def login():
         return "access token" 
     return 'Cannot login'
     # return jsonify({"desired" :list(data)})
-
 
 if __name__ == '__main__':
     app.run(debug = True)
