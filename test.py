@@ -35,19 +35,26 @@ def insert(username, password):
     cursor.execute(sql, value)
     conn.commit()
 
-@app.route('/users', methods = ['GET'])
-def getUsers():
+def require_token():
     if 'x-access-token' in request.headers:
         token = request.headers['x-access-token']
     if not token:
         return {'message' : 'Token is missing !!'}
     try:
         requestData = jwt.decode(token, app.config['SECRET_KEY'], algorithm="HS256", options={"verify_signature": False})
-        cursor.execute("SELECT * from User")
-        data = cursor.fetchone()
+        user = search(requestData['username'])
+        if(len(user) == 0): return {'message': 'This user no longer exists'}
+        return requestData
     except:
         return {'message' : 'Token is invalid !!'}
-       
+
+@app.route('/users', methods = ['GET'])
+
+def getUsers():
+    requestData = require_token()
+    cursor.execute("SELECT * from User")
+    data = cursor.fetchone()
+    print(requestData)
     return data
 
 @app.route('/signup', methods = ['POST'])
@@ -75,6 +82,7 @@ def login():
     if(data['username'] == username and check_password_hash(password, data['password'])): 
         # generates the JWT Token
         token = jwt.encode({
+            'username': username,
             'exp' : datetime.utcnow() + timedelta(minutes = 30)
         }, app.config['SECRET_KEY'], algorithm="HS256")
         return {'token' : token}
