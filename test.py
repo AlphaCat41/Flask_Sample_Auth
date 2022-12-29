@@ -37,14 +37,11 @@ def insert(username, password):
 
 @app.route('/users', methods = ['GET'])
 def getUsers():
-    # jwt is passed in the request header
     if 'x-access-token' in request.headers:
         token = request.headers['x-access-token']
-    # return 401 if token is not passed
     if not token:
         return {'message' : 'Token is missing !!'}
     try:
-        # decoding the payload to fetch the stored details
         requestData = jwt.decode(token, app.config['SECRET_KEY'], algorithm="HS256", options={"verify_signature": False})
         cursor.execute("SELECT * from User")
         data = cursor.fetchone()
