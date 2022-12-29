@@ -1,15 +1,18 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flaskext.mysql import MySQL
 from dotenv import load_dotenv
 from  werkzeug.security import generate_password_hash, check_password_hash
 import os
+import jwt
+from datetime import datetime, timedelta
+
 
 load_dotenv()
 
 app = Flask(__name__)
 
 mysql = MySQL()
-
+app.config['SECRET_KEY'] = 'your secret key'
 app.config['MYSQL_DATABASE_USER'] = os.getenv('MYSQL_DATABASE_USER')
 app.config['MYSQL_DATABASE_PASSWORD'] = os.getenv('MYSQL_DATABASE_PASSWORD')
 app.config['MYSQL_DATABASE_DB'] = os.getenv('MYSQL_DATABASE_DB')
@@ -32,12 +35,23 @@ def insert(username, password):
     cursor.execute(sql, value)
     conn.commit()
 
-@app.route('/')
-def test():
-    cursor.execute("SELECT * from User")
-    data = cursor.fetchone()
-
-    return 'send token'
+@app.route('/users', methods = ['GET'])
+def getUsers():
+    # jwt is passed in the request header
+    if 'x-access-token' in request.headers:
+        token = request.headers['x-access-token']
+    # return 401 if token is not passed
+    if not token:
+        return {'message' : 'Token is missing !!'}
+    try:
+        # decoding the payload to fetch the stored details
+        requestData = jwt.decode(token, app.config['SECRET_KEY'], algorithm="HS256", options={"verify_signature": False})
+        cursor.execute("SELECT * from User")
+        data = cursor.fetchone()
+    except:
+        return {'message' : 'Token is invalid !!'}
+       
+    return data
 
 @app.route('/signup', methods = ['POST'])
 def signup():
@@ -62,7 +76,11 @@ def login():
     username = user[0]
     password = user[1]
     if(data['username'] == username and check_password_hash(password, data['password'])): 
-        return "access token" 
+        # generates the JWT Token
+        token = jwt.encode({
+            'exp' : datetime.utcnow() + timedelta(minutes = 30)
+        }, app.config['SECRET_KEY'], algorithm="HS256")
+        return {'token' : token}
     return 'Cannot login'
     # return jsonify({"desired" :list(data)})
 
