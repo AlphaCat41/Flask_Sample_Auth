@@ -36,7 +36,6 @@ def insert(username, password):
 def test():
     cursor.execute("SELECT * from User")
     data = cursor.fetchone()
-    cursor.close()
 
     return 'send token'
 
