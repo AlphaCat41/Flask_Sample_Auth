@@ -53,9 +53,9 @@ def require_token():
 def getUsers():
     requestData = require_token()
     cursor.execute("SELECT * from User")
-    data = cursor.fetchone()
+    data = cursor.fetchall()
     print(requestData)
-    return data
+    return list(data)
 
 @app.route('/signup', methods = ['POST'])
 def signup():
